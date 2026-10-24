@@ -127,6 +127,19 @@ textarea {
   margin-top: 4px;
 }
 
+.en-line {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.fa-line {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: isolate;
+}
+
 @media (min-width: 900px) {
   html {
     font-size: 17px;

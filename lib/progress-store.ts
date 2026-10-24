@@ -27,7 +27,7 @@ export function setToken(token: string) {
   else localStorage.setItem(TOKEN_KEY, token.trim());
 }
 
-function applyToggle(state: ProgressState, taskId: string, lessonId?: number, kind?: string) {
+export function applyToggle(state: ProgressState, taskId: string, lessonId?: number, kind?: string) {
   const next = structuredClone(state);
   const has = next.completed.includes(taskId);
   next.completed = has ? next.completed.filter((id) => id !== taskId) : [...next.completed, taskId];
@@ -84,24 +84,37 @@ async function writeGithub(state: ProgressState, sha?: string) {
   return state;
 }
 
+function readLocal() {
+  const raw = localStorage.getItem(LOCAL_KEY);
+  return raw ? (JSON.parse(raw) as ProgressState) : emptyProgress();
+}
+
 export async function loadProgress(): Promise<{ state: ProgressState; storage: "github" | "local" }> {
+  const local = readLocal();
   try {
     const { state } = await readGithub();
-    return { state, storage: "github" };
+    const useLocal = Date.parse(local.updatedAt) > Date.parse(state.updatedAt);
+    const next = useLocal ? local : state;
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+    return { state: next, storage: useLocal || !getToken() ? "local" : "github" };
   } catch {
-    const raw = localStorage.getItem(LOCAL_KEY);
-    return { state: raw ? (JSON.parse(raw) as ProgressState) : emptyProgress(), storage: "local" };
+    return { state: local, storage: "local" };
+  }
+}
+
+export async function persistProgress(state: ProgressState) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
+  try {
+    await writeGithub(state);
+    return getToken() ? ("github" as const) : ("local" as const);
+  } catch {
+    return "local" as const;
   }
 }
 
 export async function toggleProgress(taskId: string, lessonId?: number, kind?: string) {
   const current = await loadProgress();
   const next = applyToggle(current.state, taskId, lessonId, kind);
-  try {
-    await writeGithub(next);
-    return { state: next, storage: getToken() ? ("github" as const) : current.storage };
-  } catch {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-    return { state: next, storage: "local" as const };
-  }
+  const storage = await persistProgress(next);
+  return { state: next, storage };
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { LessonBody } from "@/components/LessonContent";
+import { LessonPanel } from "@/components/LessonPanel";
+import { getLesson, locate } from "@/lib/catalog";
 import type { DayPlan } from "@/lib/types";
 
 const kindLabel: Record<string, string> = {
@@ -10,12 +11,6 @@ const kindLabel: Record<string, string> = {
   weekly: "مرور هفته",
   second: "دور دوم",
   consolidate: "جمع‌بندی",
-};
-
-const priorChapter: Record<string, string> = {
-  "1": "1-Greeting",
-  "2": "2-Using look + adj",
-  "3": "3-Would like",
 };
 
 export function TaskList({
@@ -41,15 +36,17 @@ export function TaskList({
       </div>
       {day.tasks.map((task) => {
         const done = completed.includes(task.id);
-        const priorKey = task.id.split(":prior:")[1];
+        const related = task.lessonIds?.length ? task.lessonIds : task.lessonId ? [task.lessonId] : [];
+        const main = task.lessonId ? getLesson(task.lessonId) : null;
+        const place = main ? locate(main) : null;
         return (
-          <article key={task.id} className="card p-3.5" style={{ opacity: done ? 0.72 : 1 }}>
-            <button
-              onClick={() => onToggle(task.id, task.lessonId, task.kind)}
-              className="w-full text-right flex gap-3 items-start bg-transparent border-0 p-0 text-inherit"
-            >
-              <span
-                className="mt-1 size-7 shrink-0 rounded-full border grid place-items-center text-sm"
+          <article key={task.id} className="card p-3.5">
+            <div className="flex gap-3 items-start">
+              <button
+                type="button"
+                onClick={() => onToggle(task.id, task.lessonId, task.kind)}
+                aria-label={done ? "برداشتن تیک" : "انجام شد"}
+                className="mt-1 size-8 shrink-0 rounded-full border grid place-items-center text-sm"
                 style={{
                   borderColor: done ? "var(--teal)" : "var(--line)",
                   background: done ? "var(--teal)" : "transparent",
@@ -57,17 +54,32 @@ export function TaskList({
                 }}
               >
                 {done ? "✓" : ""}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[12px] text-[var(--gold)] mb-1">
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className="text-[12px] text-[var(--gold)]">
                   {kindLabel[task.kind]} · {task.speed} · {task.minutes} دقیقه
-                </span>
-                <span className="task-title">{task.title}</span>
-                <span className="task-detail">{task.detail}</span>
-              </span>
-            </button>
-            {task.lessonId ? <LessonBody lessonId={task.lessonId} /> : null}
-            {priorKey && priorChapter[priorKey] ? <LessonBody chapter={priorChapter[priorKey]} /> : null}
+                </div>
+                <div className="task-title">{task.title}</div>
+                {place ? (
+                  <div className="text-[13px] text-[var(--teal)] leading-7">
+                    پوشه {place.folder} · جلسه {place.session} · ویس {place.voice}
+                  </div>
+                ) : null}
+                <div className="task-detail">{task.detail}</div>
+                {done ? (
+                  <button
+                    type="button"
+                    onClick={() => onToggle(task.id, task.lessonId, task.kind)}
+                    className="mt-2 rounded-lg bg-white/10 px-3 py-1.5 text-[13px] font-bold border-0 text-inherit"
+                  >
+                    برداشتن تیک
+                  </button>
+                ) : null}
+                {related.map((id) => (
+                  <LessonPanel key={id} lessonId={id} />
+                ))}
+              </div>
+            </div>
           </article>
         );
       })}

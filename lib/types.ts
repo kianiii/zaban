@@ -1,3 +1,5 @@
+export type Pair = { fa: string; en: string };
+
 export type Lesson = {
   id: number;
   book: string;
@@ -19,6 +21,7 @@ export type TaskKind =
 export type Task = {
   id: string;
   lessonId?: number;
+  lessonIds?: number[];
   kind: TaskKind;
   title: string;
   detail: string;

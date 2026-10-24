@@ -1,8 +1,8 @@
-import lessonsData from "../data/lessons.json";
+import { getLesson, lessons, locate } from "./catalog";
 import type { DayPlan, Lesson, Task } from "./types";
 import { addDays, formatJalali, isoDate, WEEKDAYS } from "./jalali";
 
-export const lessons = lessonsData as Lesson[];
+export { lessons };
 export const PLAN_START = new Date(2026, 9, 25);
 
 export function isPriorLesson(lesson: Lesson) {
@@ -13,16 +13,9 @@ export const priorLessons = lessons.filter(isPriorLesson);
 export const remainingLessons = lessons.filter((lesson) => !isPriorLesson(lesson));
 export const priorLessonIds = priorLessons.map((lesson) => lesson.id);
 
-const lessonById = new Map(lessons.map((l) => [l.id, l]));
-
 function lessonLabel(lesson: Lesson) {
-  return `#${lesson.id} ${shortBook(lesson.book)} › ${lesson.chapter} › ${lesson.title}`;
-}
-
-function shortBook(book: string) {
-  if (book.includes("Everyday")) return "پ۱";
-  if (book.includes("Advance 1")) return "پ۲";
-  return "پ۳";
+  const place = locate(lesson);
+  return `پوشه ${place.folder} · ویس ${place.voice}`;
 }
 
 function packLessons(queue: Lesson[], start: number, target: number, hardCap: number) {
@@ -52,7 +45,7 @@ function virtualHistory(): Record<number, number> {
 }
 
 function idsLabel(ids: number[]) {
-  const chapters = [...new Set(ids.map((id) => lessonById.get(id)?.chapter).filter(Boolean))];
+  const chapters = [...new Set(ids.map((id) => getLesson(id)?.chapter).filter(Boolean))];
   return `${chapters.join("، ")} · ${ids.map((id) => `#${id}`).join("، ")}`;
 }
 
@@ -74,7 +67,7 @@ export function buildSchedule(): DayPlan[] {
     if (isLaterSunday) {
       const weekLessons = Object.entries(firstListenDay)
         .filter(([, d]) => d >= dayIndex - 7 && d < dayIndex)
-        .map(([id]) => lessonById.get(Number(id))!)
+        .map(([id]) => getLesson(Number(id))!)
         .filter(Boolean);
       const minutes = Math.max(50, Math.round(weekLessons.length * 3.5));
       days.push({
@@ -91,6 +84,7 @@ export function buildSchedule(): DayPlan[] {
             id: `${iso}:weekly`,
             kind: "weekly",
             title: "مرور هفتگی",
+            lessonIds: weekLessons.map((lesson) => lesson.id),
             detail: weekLessons.length
               ? `Conversation و لغات ${idsLabel(weekLessons.map((l) => l.id))}`
               : "مرور درس‌های همین هفته",
@@ -129,6 +123,7 @@ export function buildSchedule(): DayPlan[] {
           id: `${iso}:prior:${group.key}`,
           kind: "review-conversation",
           title: group.title,
+          lessonIds: group.ids,
           detail: `چون این فصل‌ها را گوش داده‌ای: Conversation + Vocabulary/Context ${group.ids.map((id) => `#${id}`).join("، ")}`,
           minutes: 15,
           speed: "1x",
@@ -145,6 +140,7 @@ export function buildSchedule(): DayPlan[] {
         id: `${iso}:rv:${yesterday.join("-")}`,
         kind: "review-vocab",
         title: "مرور ۱ روز بعد",
+        lessonIds: yesterday,
         detail: `خواندن Vocabulary + Context ${idsLabel(yesterday)}`,
         minutes: yesterday.length * 3,
         speed: "—",
@@ -155,6 +151,7 @@ export function buildSchedule(): DayPlan[] {
         id: `${iso}:r3:${threeAgo.join("-")}`,
         kind: "review-conversation",
         title: "مرور ۳ روز بعد",
+        lessonIds: threeAgo,
         detail: `گوش دادن دوباره Conversation ${idsLabel(threeAgo)}`,
         minutes: Math.max(8, threeAgo.length * 2),
         speed: "1x",
@@ -165,6 +162,7 @@ export function buildSchedule(): DayPlan[] {
         id: `${iso}:r7:${sevenAgo.join("-")}`,
         kind: "review-conversation",
         title: "مرور ۷ روز بعد",
+        lessonIds: sevenAgo,
         detail: `یک‌بار دیگر Conversation ${idsLabel(sevenAgo)}`,
         minutes: Math.max(8, sevenAgo.length * 2),
         speed: "1x",
