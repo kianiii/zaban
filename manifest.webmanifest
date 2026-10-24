@@ -1,0 +1,17 @@
+{
+  "name": "پیگیری مطالعه Eteach",
+  "short_name": "Eteach",
+  "start_url": "/today",
+  "display": "standalone",
+  "background_color": "#08110f",
+  "theme_color": "#08110f",
+  "dir": "rtl",
+  "lang": "fa",
+  "icons": [
+    {
+      "src": "/file.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
