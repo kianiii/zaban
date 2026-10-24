@@ -1,4 +1,4 @@
-const MONTHS = [
+export const MONTHS = [
   "فروردین",
   "اردیبهشت",
   "خرداد",
@@ -110,4 +110,9 @@ export function addDays(date: Date, days: number) {
 
 export function todayIso() {
   return isoDate(new Date());
+}
+
+export function weekStartSunday(date: Date) {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return addDays(start, -start.getDay());
 }

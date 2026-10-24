@@ -1,6 +1,8 @@
 "use client";
 
+import { PeriodBoard } from "@/components/PeriodBoard";
 import { TokenBox } from "@/components/TokenBox";
+import { monthlyScore, weeklyScore } from "@/lib/period";
 import { useProgress } from "@/lib/useProgress";
 import Link from "next/link";
 
@@ -54,6 +56,9 @@ export default function DashboardPage() {
         <Ring value={stats.a2Percent} label="پوشش سطح A2" />
         <Ring value={stats.firstPercent} label="دور اول کل دوره" />
       </div>
+
+      <PeriodBoard score={weeklyScore(data.progress, data.todayIso)} />
+      <PeriodBoard score={monthlyScore(data.progress, data.todayIso)} />
 
       <div className="grid grid-cols-2 gap-3">
         {[
