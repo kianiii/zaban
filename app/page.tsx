@@ -11,20 +11,20 @@ function Ring({ value, label }: { value: number; label: string }) {
   return (
     <div className="card p-3.5 flex items-center gap-3">
       <svg width="88" height="88" viewBox="0 0 96 96" className="shrink-0">
-        <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="8" />
+        <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(28,36,48,.12)" strokeWidth="8" />
         <circle
           cx="48"
           cy="48"
           r={r}
           fill="none"
-          stroke="#3ee0b0"
+          stroke="#1b6b56"
           strokeWidth="8"
           strokeDasharray={c}
           strokeDashoffset={offset}
           strokeLinecap="round"
           transform="rotate(-90 48 48)"
         />
-        <text x="48" y="53" textAnchor="middle" fill="#e8f4ee" fontSize="16" fontWeight="800">
+        <text x="48" y="53" textAnchor="middle" fill="#1c2430" fontSize="16" fontWeight="800">
           {value}%
         </text>
       </svg>
@@ -83,7 +83,7 @@ export default function DashboardPage() {
                   {band.done}/{band.total}
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+              <div className="h-2 rounded-full bg-black/5 overflow-hidden">
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -106,7 +106,7 @@ export default function DashboardPage() {
                 <span>{book.label}</span>
                 <span>{book.percent}%</span>
               </div>
-              <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+              <div className="h-2 rounded-full bg-black/5 overflow-hidden">
                 <div className="h-full bg-[var(--gold)]" style={{ width: `${book.percent}%` }} />
               </div>
             </div>

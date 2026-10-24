@@ -15,12 +15,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Eteach",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#08110f",
+  themeColor: "#f3ead8",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

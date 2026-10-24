@@ -27,6 +27,9 @@ export type Task = {
   detail: string;
   minutes: number;
   speed: "1x" | "1.5x" | "—";
+  carried?: boolean;
+  originIso?: string;
+  originJalali?: string;
 };
 
 export type DayPlan = {

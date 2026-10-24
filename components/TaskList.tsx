@@ -1,6 +1,7 @@
 "use client";
 
-import { LessonPanel } from "@/components/LessonPanel";
+import { useState } from "react";
+import { LessonPanel, LessonReader } from "@/components/LessonPanel";
 import { getLesson, locate } from "@/lib/catalog";
 import type { DayPlan } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export function TaskList({
   completed: string[];
   onToggle: (taskId: string, lessonId?: number, kind?: string) => void;
 }) {
+  const [openId, setOpenId] = useState<number | null>(null);
   const doneCount = day.tasks.filter((t) => completed.includes(t.id)).length;
   return (
     <section className="page">
@@ -50,7 +52,7 @@ export function TaskList({
                 style={{
                   borderColor: done ? "var(--teal)" : "var(--line)",
                   background: done ? "var(--teal)" : "transparent",
-                  color: done ? "#08110f" : "var(--muted)",
+                  color: done ? "#fff8ec" : "var(--muted)",
                 }}
               >
                 {done ? "✓" : ""}
@@ -58,6 +60,7 @@ export function TaskList({
               <div className="min-w-0 flex-1">
                 <div className="text-[12px] text-[var(--gold)]">
                   {kindLabel[task.kind]} · {task.speed} · {task.minutes} دقیقه
+                  {task.carried ? ` · منتقل از ${task.originJalali}` : ""}
                 </div>
                 <div className="task-title">{task.title}</div>
                 {place ? (
@@ -70,19 +73,20 @@ export function TaskList({
                   <button
                     type="button"
                     onClick={() => onToggle(task.id, task.lessonId, task.kind)}
-                    className="mt-2 rounded-lg bg-white/10 px-3 py-1.5 text-[13px] font-bold border-0 text-inherit"
+                    className="mt-2 rounded-lg bg-[var(--paper)] px-3 py-1.5 text-[13px] font-bold border border-[var(--line)]"
                   >
                     برداشتن تیک
                   </button>
                 ) : null}
                 {related.map((id) => (
-                  <LessonPanel key={id} lessonId={id} />
+                  <LessonPanel key={id} lessonId={id} onOpen={setOpenId} />
                 ))}
               </div>
             </div>
           </article>
         );
       })}
+      {openId ? <LessonReader lessonId={openId} onClose={() => setOpenId(null)} /> : null}
     </section>
   );
 }

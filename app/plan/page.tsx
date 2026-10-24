@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { carriedCount } from "@/lib/rollover";
 import { useProgress } from "@/lib/useProgress";
 
 export default function PlanPage() {
@@ -10,12 +11,13 @@ export default function PlanPage() {
       <header>
         <h1 className="title">برنامه روزانه</h1>
         <p className="subtitle">
-          یکشنبه ۳ آبان از پوشه ۴-Could you, Shall I شروع می‌شود و مرور پوشه‌های ۱ تا ۳ همان روز هست.
+          اگر درسی را همان روز نخوانی، با تاریخ اصلی به روز بعد منتقل می‌شود و ترتیب درس‌ها عوض نمی‌شود.
         </p>
       </header>
       {data.schedule.map((day) => {
         const done = day.tasks.filter((t) => data.progress.completed.includes(t.id)).length;
         const isToday = day.iso === data.todayIso;
+        const moved = isToday ? carriedCount(data.schedule, data.progress.completed, day.iso) : 0;
         return (
           <Link
             key={day.iso}
@@ -30,6 +32,7 @@ export default function PlanPage() {
                 </div>
                 <div className="font-black text-lg">{day.jalali}</div>
                 <div className="text-sm text-[var(--muted)] mt-1">{day.phase}</div>
+                {moved ? <div className="text-sm text-[var(--fa)] mt-1">{moved} مورد از روزهای قبل</div> : null}
               </div>
               <div className="text-left text-sm">
                 <div>

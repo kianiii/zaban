@@ -18,10 +18,10 @@ export function TokenBox() {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={getToken() ? "توکن ذخیره شده؛ برای عوض کردن بنویس" : "GitHub token"}
-        className="mt-3 w-full rounded-xl bg-black/20 border border-white/10 px-3 py-3 text-[15px]"
+        className="mt-3 w-full rounded-xl bg-[var(--paper)] border border-[var(--line)] px-3 py-3 text-[15px]"
       />
       <button
-        className="mt-3 rounded-xl bg-[var(--teal)] text-[#08110f] font-black px-4 py-3"
+        className="mt-3 rounded-xl bg-[var(--teal)] text-[#fff8ec] font-black px-4 py-3"
         onClick={() => {
           setToken(value);
           setSaved(true);
