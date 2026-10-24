@@ -22,7 +22,7 @@ function emptyState(): ProgressState {
   };
 }
 
-function useGithub() {
+function githubEnabled() {
   return Boolean(token);
 }
 
@@ -88,7 +88,7 @@ function writeLocal(state: ProgressState) {
 }
 
 export async function readProgress(): Promise<ProgressState> {
-  if (useGithub()) {
+  if (githubEnabled()) {
     const { state } = await readGithub();
     return state;
   }
@@ -96,7 +96,7 @@ export async function readProgress(): Promise<ProgressState> {
 }
 
 export async function writeProgress(state: ProgressState) {
-  if (useGithub()) {
+  if (githubEnabled()) {
     const current = await readGithub();
     return writeGithub(state, current.sha);
   }
@@ -104,7 +104,7 @@ export async function writeProgress(state: ProgressState) {
 }
 
 export async function toggleTask(taskId: string, lessonId?: number, kind?: string) {
-  const state = useGithub() ? (await readGithub()).state : readLocal();
+  const state = githubEnabled() ? (await readGithub()).state : readLocal();
   const has = state.completed.includes(taskId);
   state.completed = has
     ? state.completed.filter((id) => id !== taskId)
@@ -126,5 +126,5 @@ export async function toggleTask(taskId: string, lessonId?: number, kind?: strin
 }
 
 export function storageLabel() {
-  return useGithub() ? "github" : "local";
+  return githubEnabled() ? "github" : "local";
 }
