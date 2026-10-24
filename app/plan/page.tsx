@@ -10,7 +10,7 @@ export default function PlanPage() {
       <header>
         <h1 className="title">برنامه روزانه</h1>
         <p className="subtitle">
-          از ۱ آبان، بعد از درس ۳. یکشنبه‌ها مرور هفتگی است.
+          یکشنبه ۳ آبان از پوشه ۴-Could you, Shall I شروع می‌شود و مرور پوشه‌های ۱ تا ۳ همان روز هست.
         </p>
       </header>
       {data.schedule.map((day) => {

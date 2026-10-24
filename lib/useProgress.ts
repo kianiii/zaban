@@ -5,6 +5,7 @@ import type { DayPlan, ProgressState } from "./types";
 import { computeStats } from "./stats";
 import { nearestPlanDay, schedule } from "./schedule";
 import { todayIso } from "./jalali";
+import { emptyProgress, loadProgress, toggleProgress } from "./progress-store";
 
 type Payload = {
   progress: ProgressState;
@@ -12,6 +13,7 @@ type Payload = {
   today: DayPlan;
   todayIso: string;
   schedule: DayPlan[];
+  storage: "github" | "local";
 };
 
 export function useProgress() {
@@ -19,9 +21,16 @@ export function useProgress() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/progress", { cache: "no-store" });
-    const json = (await res.json()) as Payload;
-    setData(json);
+    const { state, storage } = await loadProgress();
+    const iso = todayIso();
+    setData({
+      progress: state,
+      stats: computeStats(state),
+      today: nearestPlanDay(iso),
+      todayIso: iso,
+      schedule,
+      storage,
+    });
     setLoading(false);
   }, []);
 
@@ -30,37 +39,21 @@ export function useProgress() {
   }, [load]);
 
   async function toggle(taskId: string, lessonId?: number, kind?: string) {
-    const res = await fetch("/api/progress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "toggle", taskId, lessonId, kind }),
-    });
-    const json = await res.json();
+    const { state, storage } = await toggleProgress(taskId, lessonId, kind);
     setData((prev) =>
       prev
-        ? { ...prev, progress: json.progress, stats: json.stats }
+        ? { ...prev, progress: state, stats: computeStats(state), storage }
         : prev
     );
   }
 
   const fallback: Payload = {
-    progress: {
-      completed: [],
-      lessonFirstDone: [],
-      lessonSecondDone: [],
-      notes: {},
-      updatedAt: "",
-    },
-    stats: computeStats({
-      completed: [],
-      lessonFirstDone: Array.from({ length: 15 }, (_, i) => i + 1),
-      lessonSecondDone: [],
-      notes: {},
-      updatedAt: "",
-    }),
+    progress: emptyProgress(),
+    stats: computeStats(emptyProgress()),
     today: nearestPlanDay(todayIso()),
     todayIso: todayIso(),
     schedule,
+    storage: "local",
   };
 
   return { data: data ?? fallback, loading, toggle, reload: load };

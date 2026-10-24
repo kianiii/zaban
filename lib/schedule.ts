@@ -3,8 +3,15 @@ import type { DayPlan, Lesson, Task } from "./types";
 import { addDays, formatJalali, isoDate, WEEKDAYS } from "./jalali";
 
 export const lessons = lessonsData as Lesson[];
-export const PLAN_START = new Date(2026, 9, 23);
-export const COMPLETED_THROUGH = 15;
+export const PLAN_START = new Date(2026, 9, 25);
+
+export function isPriorLesson(lesson: Lesson) {
+  return lesson.book.includes("Everyday") && /^[123]-/.test(lesson.chapter);
+}
+
+export const priorLessons = lessons.filter(isPriorLesson);
+export const remainingLessons = lessons.filter((lesson) => !isPriorLesson(lesson));
+export const priorLessonIds = priorLessons.map((lesson) => lesson.id);
 
 const lessonById = new Map(lessons.map((l) => [l.id, l]));
 
@@ -18,20 +25,13 @@ function shortBook(book: string) {
   return "پ۳";
 }
 
-function packLessons(
-  queue: Lesson[],
-  start: number,
-  target: number,
-  hardCap: number
-) {
+function packLessons(queue: Lesson[], start: number, target: number, hardCap: number) {
   const picked: Lesson[] = [];
   let minutes = 0;
   let i = start;
   while (i < queue.length) {
     const item = queue[i];
-    if (picked.length > 0 && minutes >= target && minutes + item.totalMinutes > hardCap) {
-      break;
-    }
+    if (picked.length > 0 && minutes >= target && minutes + item.totalMinutes > hardCap) break;
     picked.push(item);
     minutes += item.totalMinutes;
     i += 1;
@@ -43,21 +43,25 @@ function packLessons(
 
 function virtualHistory(): Record<number, number> {
   const map: Record<number, number> = {};
-  for (const lesson of lessons) {
-    if (lesson.id <= 5) map[lesson.id] = -2;
-    else if (lesson.id <= 11) map[lesson.id] = -1;
-    else if (lesson.id <= 15) map[lesson.id] = 0;
+  for (const lesson of priorLessons) {
+    if (lesson.chapter.startsWith("1-")) map[lesson.id] = -6;
+    else if (lesson.chapter.startsWith("2-")) map[lesson.id] = -2;
+    else map[lesson.id] = 0;
   }
   return map;
 }
 
+function idsLabel(ids: number[]) {
+  const chapters = [...new Set(ids.map((id) => lessonById.get(id)?.chapter).filter(Boolean))];
+  return `${chapters.join("، ")} · ${ids.map((id) => `#${id}`).join("، ")}`;
+}
+
 export function buildSchedule(): DayPlan[] {
-  const remaining = lessons.filter((l) => l.id > COMPLETED_THROUGH);
+  const remaining = remainingLessons;
   const firstListenDay = virtualHistory();
   const days: DayPlan[] = [];
   let cursor = 0;
   let dayIndex = 1;
-
   const method =
     "Core Lesson را کامل گوش بده و همراهش با صدای بلند تکرار کن؛ بعد Conversation را گوش بده و Context/Vocabulary را بخوان.";
 
@@ -65,8 +69,9 @@ export function buildSchedule(): DayPlan[] {
     const date = addDays(PLAN_START, dayIndex - 1);
     const weekday = WEEKDAYS[date.getDay()];
     const iso = isoDate(date);
+    const isLaterSunday = date.getDay() === 0 && dayIndex > 1;
 
-    if (date.getDay() === 0) {
+    if (isLaterSunday) {
       const weekLessons = Object.entries(firstListenDay)
         .filter(([, d]) => d >= dayIndex - 7 && d < dayIndex)
         .map(([id]) => lessonById.get(Number(id))!)
@@ -87,8 +92,8 @@ export function buildSchedule(): DayPlan[] {
             kind: "weekly",
             title: "مرور هفتگی",
             detail: weekLessons.length
-              ? `Conversation و لغات درس‌های #${weekLessons[0].id} تا #${weekLessons.at(-1)!.id}`
-              : "مرور درس‌های همین هفته و جمله‌هایی که سخت بودند",
+              ? `Conversation و لغات ${idsLabel(weekLessons.map((l) => l.id))}`
+              : "مرور درس‌های همین هفته",
             minutes,
             speed: "—",
           },
@@ -98,7 +103,7 @@ export function buildSchedule(): DayPlan[] {
       continue;
     }
 
-    const packed = packLessons(remaining, cursor, 100, 130);
+    const packed = packLessons(remaining, cursor, dayIndex === 1 ? 85 : 100, 125);
     cursor = packed.next;
     const tasks: Task[] = packed.picked.map((lesson) => {
       firstListenDay[lesson.id] = dayIndex;
@@ -113,62 +118,69 @@ export function buildSchedule(): DayPlan[] {
       };
     });
 
-    const yesterday = Object.entries(firstListenDay)
-      .filter(([, d]) => d === dayIndex - 1)
-      .map(([id]) => Number(id));
-    const threeAgo = Object.entries(firstListenDay)
-      .filter(([, d]) => d === dayIndex - 3)
-      .map(([id]) => Number(id));
-    const sevenAgo = Object.entries(firstListenDay)
-      .filter(([, d]) => d === dayIndex - 7)
-      .map(([id]) => Number(id));
+    if (dayIndex === 1) {
+      const groups = [
+        { key: "1", title: "مرور پوشه ۱-Greeting", ids: priorLessons.filter((l) => l.chapter.startsWith("1-")).map((l) => l.id) },
+        { key: "2", title: "مرور پوشه ۲-Using look + adj", ids: priorLessons.filter((l) => l.chapter.startsWith("2-")).map((l) => l.id) },
+        { key: "3", title: "مرور پوشه ۳-Would like", ids: priorLessons.filter((l) => l.chapter.startsWith("3-")).map((l) => l.id) },
+      ];
+      for (const group of groups) {
+        tasks.push({
+          id: `${iso}:prior:${group.key}`,
+          kind: "review-conversation",
+          title: group.title,
+          detail: `چون این فصل‌ها را گوش داده‌ای: Conversation + Vocabulary/Context ${group.ids.map((id) => `#${id}`).join("، ")}`,
+          minutes: 15,
+          speed: "1x",
+        });
+      }
+    }
 
-    if (yesterday.length) {
+    const yesterday = Object.entries(firstListenDay).filter(([, d]) => d === dayIndex - 1).map(([id]) => Number(id));
+    const threeAgo = Object.entries(firstListenDay).filter(([, d]) => d === dayIndex - 3).map(([id]) => Number(id));
+    const sevenAgo = Object.entries(firstListenDay).filter(([, d]) => d === dayIndex - 7).map(([id]) => Number(id));
+
+    if (yesterday.length && dayIndex > 1) {
       tasks.push({
         id: `${iso}:rv:${yesterday.join("-")}`,
         kind: "review-vocab",
         title: "مرور ۱ روز بعد",
-        detail: `خواندن Vocabulary + Context درس‌های ${yesterday.map((id) => `#${id}`).join("، ")}`,
+        detail: `خواندن Vocabulary + Context ${idsLabel(yesterday)}`,
         minutes: yesterday.length * 3,
         speed: "—",
       });
     }
-    if (threeAgo.length) {
+    if (threeAgo.length && dayIndex > 1) {
       tasks.push({
         id: `${iso}:r3:${threeAgo.join("-")}`,
         kind: "review-conversation",
         title: "مرور ۳ روز بعد",
-        detail: `گوش دادن دوباره Conversation + نگاه سریع به لغات ${threeAgo.map((id) => `#${id}`).join("، ")}`,
+        detail: `گوش دادن دوباره Conversation ${idsLabel(threeAgo)}`,
         minutes: Math.max(8, threeAgo.length * 2),
         speed: "1x",
       });
     }
-    if (sevenAgo.length) {
+    if (sevenAgo.length && dayIndex > 1) {
       tasks.push({
         id: `${iso}:r7:${sevenAgo.join("-")}`,
         kind: "review-conversation",
         title: "مرور ۷ روز بعد",
-        detail: `یک‌بار دیگر Conversation درس‌های ${sevenAgo.map((id) => `#${id}`).join("، ")}`,
+        detail: `یک‌بار دیگر Conversation ${idsLabel(sevenAgo)}`,
         minutes: Math.max(8, sevenAgo.length * 2),
         speed: "1x",
       });
     }
-
-    const listenMinutes = packed.minutes;
-    const reviewMinutes = tasks
-      .filter((t) => t.kind !== "new")
-      .reduce((sum, t) => sum + t.minutes, 0);
 
     days.push({
       day: dayIndex,
       iso,
       jalali: formatJalali(date),
       weekday,
-      phase: "مرحله ۱ – دور اول (۱x)",
+      phase: dayIndex === 1 ? "یکشنبه · شروع از درس ۴ + مرور قبلی" : "مرحله ۱ – دور اول (۱x)",
       phaseKey: "p1",
       tasks,
-      listenMinutes: Math.round(listenMinutes),
-      reviewMinutes,
+      listenMinutes: Math.round(packed.minutes),
+      reviewMinutes: tasks.filter((t) => t.kind !== "new").reduce((sum, t) => sum + t.minutes, 0),
     });
     dayIndex += 1;
   }
@@ -177,7 +189,6 @@ export function buildSchedule(): DayPlan[] {
   let secondCursor = 0;
   while (secondCursor < secondQueue.length) {
     const date = addDays(PLAN_START, dayIndex - 1);
-    const weekday = WEEKDAYS[date.getDay()];
     const iso = isoDate(date);
     const scaled = secondQueue.slice(secondCursor).map((lesson) => ({
       ...lesson,
@@ -186,12 +197,11 @@ export function buildSchedule(): DayPlan[] {
     const packed = packLessons(scaled, 0, 110, 130);
     const real = secondQueue.slice(secondCursor, secondCursor + packed.picked.length);
     secondCursor += packed.picked.length;
-
     days.push({
       day: dayIndex,
       iso,
       jalali: formatJalali(date),
-      weekday,
+      weekday: WEEKDAYS[date.getDay()],
       phase: "مرحله ۲ – دور دوم (۱.۵x)",
       phaseKey: "p2",
       listenMinutes: Math.round(packed.minutes),
@@ -201,7 +211,7 @@ export function buildSchedule(): DayPlan[] {
         lessonId: lesson.id,
         kind: "second" as const,
         title: lessonLabel(lesson),
-        detail: "کل محتوا را با سرعت ۱.۵x یک‌بار دیگر گوش بده؛ Conversation را برای بار آخر مرور کن.",
+        detail: "کل محتوا را با سرعت ۱.۵x یک‌بار دیگر گوش بده.",
         minutes: packed.picked[index].totalMinutes,
         speed: "1.5x" as const,
       })),
@@ -210,9 +220,9 @@ export function buildSchedule(): DayPlan[] {
   }
 
   const consolidate = [
-    { book: "Everyday", text: "Conversationهای پوشه ۱ + خواندن همه Vocabulary/Context همین پوشه" },
-    { book: "Advance 1", text: "Conversationهای پوشه ۲ + خواندن Vocabulary/Context پوشه ۲" },
-    { book: "Advance 2", text: "Conversationهای پوشه ۳ + خواندن Vocabulary/Context پوشه ۳" },
+    { book: "Everyday", text: "Conversationهای پوشه ۱ + Vocabulary/Context" },
+    { book: "Advance 1", text: "Conversationهای پوشه ۲ + Vocabulary/Context" },
+    { book: "Advance 2", text: "Conversationهای پوشه ۳ + Vocabulary/Context" },
   ];
   for (const item of consolidate) {
     const date = addDays(PLAN_START, dayIndex - 1);
@@ -250,9 +260,5 @@ export function findDay(iso: string) {
 }
 
 export function nearestPlanDay(iso: string) {
-  return (
-    schedule.find((d) => d.iso === iso) ??
-    schedule.find((d) => d.iso > iso) ??
-    schedule.at(-1)!
-  );
+  return schedule.find((d) => d.iso === iso) ?? schedule.find((d) => d.iso > iso) ?? schedule.at(-1)!;
 }

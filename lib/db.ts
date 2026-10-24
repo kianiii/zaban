@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
-import { COMPLETED_THROUGH } from "./schedule";
+import { priorLessonIds } from "./schedule";
 import type { ProgressState } from "./types";
 
 const dataDir = path.join(process.cwd(), "data");
@@ -15,7 +15,7 @@ const token = process.env.GITHUB_TOKEN || "";
 function emptyState(): ProgressState {
   return {
     completed: [],
-    lessonFirstDone: Array.from({ length: COMPLETED_THROUGH }, (_, i) => i + 1),
+    lessonFirstDone: [...priorLessonIds],
     lessonSecondDone: [],
     notes: {},
     updatedAt: new Date().toISOString(),

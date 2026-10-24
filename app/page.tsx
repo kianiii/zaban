@@ -1,5 +1,6 @@
 "use client";
 
+import { TokenBox } from "@/components/TokenBox";
 import { useProgress } from "@/lib/useProgress";
 import Link from "next/link";
 
@@ -42,7 +43,7 @@ export default function DashboardPage() {
   return (
     <div className="page">
       <header>
-        <p className="text-[var(--gold)] text-[13px] m-0">شروع از ۱ آبان ۱۴۰۵ · بعد از درس ۳</p>
+        <p className="text-[var(--gold)] text-[13px] m-0">یکشنبه ۳ آبان · شروع از پوشه درس ۴ + مرور ۱ تا ۳</p>
         <h1 className="title mt-1">پیشرفت زبان</h1>
         <p className="subtitle">
           {loading ? "در حال خواندن دیتابیس..." : "از گوشی یا کامپیوتر تیک بزن؛ پیشرفت ذخیره می‌شود."}
@@ -112,6 +113,8 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
+
+      <TokenBox />
 
       <Link href="/today" className="card p-3.5 block">
         <div className="text-[var(--gold)] text-[13px]">برنامه امروز</div>

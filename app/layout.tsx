@@ -10,7 +10,7 @@ const vazir = Vazirmatn({
 
 export const metadata: Metadata = {
   title: "پیگیری مطالعه Eteach",
-  description: "برنامه دوماهه از ۱ آبان با نمودار پیشرفت و سطح A2",
+  description: "برنامه از یکشنبه ۳ آبان، شروع پوشه درس ۴ به‌همراه مرور پوشه‌های قبلی",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
